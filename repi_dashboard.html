@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة مؤشر أسعار العقارات السعودي | REPI Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly.min.js"></script>
+<style>
+  :root{
+    --navy:#132038;
+    --navy-2:#1c2f4f;
+    --sand:#b8935f;
+    --sand-light:#e4d3b8;
+    --teal:#2f5d5d;
+    --bg:#f5f2ec;
+    --card:#ffffff;
+    --ink:#1c1c1c;
+    --muted:#6b6558;
+    --pos:#3f7a55;
+    --neg:#a8483d;
+    --line:#e2dccc;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Tajawal',sans-serif; direction:rtl;
+    line-height:1.6;
+  }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+
+  header.hero{
+    background:linear-gradient(160deg, var(--navy) 0%, var(--navy-2) 60%, var(--teal) 130%);
+    color:#fff; padding:64px 40px 56px; position:relative; overflow:hidden;
+  }
+  header.hero::after{
+    content:""; position:absolute; inset:0; opacity:.12;
+    background-image: repeating-linear-gradient(45deg, transparent 0 38px, var(--sand) 38px 40px),
+                       repeating-linear-gradient(-45deg, transparent 0 38px, var(--sand) 38px 40px);
+    pointer-events:none;
+  }
+  .hero-inner{ position:relative; max-width:1180px; margin:0 auto; }
+  .eyebrow{
+    color:var(--sand-light); letter-spacing:.08em; font-size:13px; font-weight:500;
+    text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{ content:""; width:28px; height:2px; background:var(--sand); display:inline-block; }
+  h1{ font-size:clamp(28px,4vw,44px); font-weight:900; margin:0 0 14px; line-height:1.25; }
+  .hero p.sub{ font-size:17px; color:#dfe4ee; max-width:680px; margin:0 0 30px; font-weight:300; }
+  .kpi-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; max-width:1000px; }
+  .kpi{
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.15);
+    border-radius:10px; padding:16px 18px; backdrop-filter:blur(4px);
+  }
+  .kpi .label{ font-size:12.5px; color:#c7cede; margin-bottom:6px; }
+  .kpi .value{ font-size:26px; font-weight:700; font-family:'IBM Plex Mono',monospace; }
+  .kpi .value.pos{ color:#8fd9a8; } .kpi .value.neg{ color:#f0a89f; }
+  .kpi .delta{ font-size:12.5px; margin-top:4px; color:#c7cede; }
+
+  main{ max-width:1180px; margin:0 auto; padding:0 40px 80px; }
+
+  section{ padding:56px 0; border-bottom:1px solid var(--line); }
+  section:last-of-type{ border-bottom:none; }
+  .sec-head{ display:flex; align-items:baseline; gap:16px; margin-bottom:8px; }
+  .sec-num{ font-family:'IBM Plex Mono',monospace; color:var(--sand); font-size:14px; font-weight:500; }
+  h2{ font-size:26px; font-weight:700; margin:0 0 6px; color:var(--navy); }
+  .sec-desc{ color:var(--muted); font-size:15px; max-width:720px; margin-bottom:28px; }
+
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px; }
+  .grid-2{ display:grid; grid-template-columns:1.3fr 1fr; gap:20px; }
+  @media(max-width:860px){ .grid-2{ grid-template-columns:1fr; } .kpi-row{grid-template-columns:repeat(2,1fr);} header.hero{padding:44px 20px;} main{padding:0 20px 60px;} }
+
+  .controls{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+  .chip{
+    border:1px solid var(--line); background:#fff; color:var(--muted);
+    padding:7px 14px; border-radius:20px; font-size:13.5px; cursor:pointer;
+    font-family:'Tajawal',sans-serif; transition:.15s;
+  }
+  .chip.active{ background:var(--navy); color:#fff; border-color:var(--navy); }
+  .chip:hover{ border-color:var(--sand); }
+
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  th,td{ padding:9px 10px; text-align:right; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:500; font-size:12.5px; text-transform:uppercase; letter-spacing:.03em; }
+  td.num{ font-family:'IBM Plex Mono',monospace; }
+  .pos{ color:var(--pos); } .neg{ color:var(--neg); }
+
+  .note{
+    font-size:13.5px; color:var(--muted); background:#faf8f3; border-right:3px solid var(--sand);
+    padding:12px 16px; border-radius:6px; margin-top:16px;
+  }
+
+  footer{ background:var(--navy); color:#c7cede; padding:40px; font-size:13.5px; }
+  footer .foot-inner{ max-width:1180px; margin:0 auto; display:flex; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+  footer a{ color:var(--sand-light); }
+
+  .context-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media(max-width:860px){ .context-grid{ grid-template-columns:repeat(2,1fr); } }
+  .ctx-card{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; }
+  .ctx-card .v{ font-family:'IBM Plex Mono',monospace; font-size:30px; font-weight:700; color:var(--navy); margin-bottom:8px; }
+  .ctx-card .l{ font-size:13.5px; color:var(--ink); margin-bottom:14px; line-height:1.35; }
+  .ctx-card .src{ font-size:11.5px; color:var(--teal); font-style:italic; }
+
+  .reco-card{ background:linear-gradient(160deg, var(--navy) 0%, var(--navy-2) 70%); border-radius:14px; padding:36px 32px; color:#fff; }
+  .reco-headline{ font-size:22px; font-weight:700; line-height:1.5; margin-bottom:26px; max-width:900px; }
+  .reco-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:22px; }
+  @media(max-width:860px){ .reco-stats{ grid-template-columns:1fr; } }
+  .reco-stat{ background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:16px; text-align:center; }
+  .reco-stat .v{ font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:700; margin-bottom:6px; }
+  .reco-stat .l{ font-size:12px; color:#c7cede; line-height:1.3; }
+  .reco-rationale{ font-size:13.5px; color:#c7cede; font-style:italic; line-height:1.5; max-width:900px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">تحليل بيانات · قطاع التطوير العقاري</div>
+    <h1>مؤشر أسعار العقارات السعودي<br>الرقم القياسي REPI — لوحة تحليلية تفاعلية</h1>
+    <p class="sub">قراءة تحليلية لاتجاهات السوق العقاري السكني والتجاري في المملكة، مبنية على بيانات الهيئة العامة للإحصاء الرسمية حتى الربع الثاني من عام 2026.</p>
+    <div class="kpi-row" id="kpiRow"></div>
+  </div>
+</header>
+
+<main>
+
+  <section id="sec-overview">
+    <div class="sec-head"><span class="sec-num">01</span><h2>الاتجاه العام للمؤشر</h2></div>
+    <p class="sec-desc">مقارنة المؤشر العام بالسكني والتجاري عبر الزمن، منذ الربع الأول 2021 وحتى الربع الثاني 2026 (سنة الأساس 2023=100).</p>
+    <div class="card"><div id="chartOverview" style="height:420px;"></div></div>
+  </section>
+
+  <section id="sec-region">
+    <div class="sec-head"><span class="sec-num">02</span><h2>ترتيب المناطق حسب الأداء</h2></div>
+    <p class="sec-desc">نسبة النمو التراكمي للمؤشر في كل منطقة إدارية من بداية فترة البيانات إلى أحدث ربع متاح.</p>
+    <div class="grid-2">
+      <div class="card"><div id="chartRegionRank" style="height:460px;"></div></div>
+      <div class="card">
+        <div class="controls" id="regionChips"></div>
+        <div id="chartRegionTrend" style="height:400px;"></div>
+      </div>
+    </div>
+    <div class="note">ملاحظة: منطقة الباحة سجلت انخفاضاً تراكمياً كبيراً (-32%)، وهو ما يستدعي تحققاً إضافياً من العوامل المحلية (العرض/الطلب، المشاريع، البيانات القاعدية) قبل أي استنتاج نهائي.</div>
+  </section>
+
+  <section id="sec-type">
+    <div class="sec-head"><span class="sec-num">03</span><h2>مقارنة أنواع العقار السكني</h2></div>
+    <p class="sec-desc">أداء الأراضي السكنية مقابل الفلل والشقق، من حيث النمو التراكمي والتقلب (Volatility).</p>
+    <div class="grid-2">
+      <div class="card"><div id="chartTypeSeries" style="height:400px;"></div></div>
+      <div class="card">
+        <table id="typeTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <section id="sec-seasonal">
+    <div class="sec-head"><span class="sec-num">04</span><h2>الموسمية الربعية</h2></div>
+    <p class="sec-desc">متوسط التغيّر الربعي (QoQ%) حسب موقع الربع (الأول، الثاني، الثالث، الرابع) — نمط أولي يشير إلى تفوق الربع الثاني تاريخياً.</p>
+    <div class="card"><div id="chartSeasonal" style="height:360px;"></div></div>
+    <div class="note">حجم العينة محدود (5–6 مشاهدات لكل موقع ربع) — هذه إشارة استكشافية أولية وليست استنتاجاً إحصائياً قاطعاً.</div>
+  </section>
+
+  <section id="sec-forecast">
+    <div class="sec-head"><span class="sec-num">05</span><h2>نموذج تنبؤي أولي</h2></div>
+    <p class="sec-desc">توقع المؤشر العام لأربعة أرباع قادمة باستخدام نموذجين أوليين: اتجاه خطي بسيط، وتمهيد أسي (Holt's Linear Trend).</p>
+    <div class="card"><div id="chartForecast" style="height:420px;"></div></div>
+    <div class="note">⚠️ نموذج أولي (Baseline) على عينة من 22 مشاهدة ربعية فقط — لأغراض تعليمية ومنهجية، وليس أساساً لقرار استثماري. يتطلب الاستخدام الفعلي نمذجة ARIMA/SARIMA مع بيانات أطول ومتغيرات اقتصادية مساندة.</div>
+  </section>
+
+  <section id="sec-context">
+    <div class="sec-head"><span class="sec-num">06</span><h2>السياق السوقي التكميلي</h2></div>
+    <p class="sec-desc">مؤشرات خارجية موثّقة المصدر (لا تُدمج في مؤشر REPI) — لفهم أعمق للسوق التشغيلي: الإشغال، الشواغر، والإيجارات.</p>
+    <div class="context-grid" id="contextGrid"></div>
+  </section>
+
+  <section id="sec-recommendation">
+    <div class="sec-head"><span class="sec-num">07</span><h2>التوصية الاستراتيجية</h2></div>
+    <p class="sec-desc">خلاصة تنفيذية لتوجيه تخصيص رأس المال الاستثماري والتطويري.</p>
+    <div class="reco-card">
+      <div class="reco-headline">تركيز التخصيص الرأسمالي على منطقة الرياض وفئة الأراضي السكنية، مع تجميد أي تخصيص جديد لمنطقة الباحة لحين تحقق ميداني</div>
+      <div class="reco-stats" id="recoStats"></div>
+      <div class="reco-rationale">الأساس: الرياض تتفوق بفارق كبير على كل المناطق الأخرى، والأراضي السكنية تجمع بين أعلى نمو وأدنى تقلب بين فئات الأصول. في المقابل، الباحة هي المنطقة الوحيدة التي تُظهر اتجاهاً هبوطياً حاداً ومستمراً.</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <div>
+      <strong style="color:#fff;">المصدر</strong><br>
+      الهيئة العامة للإحصاء (GASTAT) — الرقم القياسي لأسعار العقارات، الربع الثاني 2026<br>
+      <a href="https://www.stats.gov.sa/ar/indicators/48" target="_blank">stats.gov.sa/ar/indicators/48</a>
+    </div>
+    <div>
+      <strong style="color:#fff;">المنهجية</strong><br>
+      سنة الأساس: 2023 = 100 · التغطية: 2021Q1–2026Q2<br>
+      تحليل وتصميم: مشروع portfolio لتحليل بيانات القطاع العقاري
+    </div>
+  </div>
+</footer>
+
+<script id="dashboard-data" type="application/json">
+{"quarters": ["2021Q1", "2021Q2", "2021Q3", "2021Q4", "2022Q1", "2022Q2", "2022Q3", "2022Q4", "2023Q1", "2023Q2", "2023Q3", "2023Q4", "2024Q1", "2024Q2", "2024Q3", "2024Q4", "2025Q1", "2025Q2", "2025Q3", "2025Q4", "2026Q1", "2026Q2"], "general": [81.37, 82.06, 86.2, 89.15, 91.29, 95.56, 97.5, 97.22, 99.22, 100.22, 99.98, 100.59, 100.59, 101.79, 102.56, 104.18, 104.93, 105.0, 103.88, 103.48, 103.29, 106.34], "residential": [80.78, 82.36, 86.25, 89.51, 91.34, 95.65, 98.58, 98.18, 100.24, 100.71, 99.77, 99.28, 99.18, 101.13, 101.35, 102.35, 104.26, 101.57, 100.44, 100.05, 100.55, 104.25], "commercial": [82.86, 80.87, 85.97, 87.87, 91.13, 95.55, 94.38, 94.71, 96.51, 99.11, 100.23, 104.3, 104.6, 103.57, 106.67, 109.54, 107.2, 115.69, 113.89, 113.47, 110.81, 111.96], "region_ranking": [{"region": "الرياض", "growth": 55.89}, {"region": "مكة المكرمة", "growth": 18.18}, {"region": "الجوف", "growth": 18.18}, {"region": "نجران", "growth": 15.75}, {"region": "الحدود الشمالية", "growth": 13.03}, {"region": "تبوك", "growth": 12.36}, {"region": "المنطقة الشرقية", "growth": 7.15}, {"region": "جازان", "growth": 3.53}, {"region": "المدينة المنورة", "growth": 2.84}, {"region": "حائل", "growth": 0.73}, {"region": "القصيم", "growth": 0.12}, {"region": "عسير", "growth": -0.79}, {"region": "الباحة", "growth": -32.05}], "region_series": {"عام (المملكة)": [81.37, 82.06, 86.2, 89.15, 91.29, 95.56, 97.5, 97.22, 99.22, 100.22, 99.98, 100.59, 100.59, 101.79, 102.56, 104.18, 104.93, 105.0, 103.88, 103.48, 103.29, 106.34], "الرياض": [74.4, 74.86, 79.61, 84.29, 87.52, 91.89, 93.32, 95.65, 97.63, 99.93, 99.66, 102.84, 103.82, 107.53, 109.85, 113.33, 114.89, 111.35, 110.91, 109.88, 109.83, 115.98], "مكة المكرمة": [86.67, 86.7, 89.05, 90.56, 92.53, 96.61, 102.66, 100.54, 100.68, 100.65, 99.92, 98.76, 98.58, 98.22, 98.55, 98.23, 100.08, 102.07, 100.43, 100.65, 99.37, 102.43], "المدينة المنورة": [89.15, 88.45, 92.99, 95.67, 95.94, 98.89, 97.66, 98.35, 99.21, 102.88, 100.77, 97.23, 99.92, 99.24, 99.6, 98.02, 98.49, 96.03, 91.61, 92.01, 93.6, 91.68], "القصيم": [92.11, 88.16, 90.61, 91.84, 95.7, 99.01, 104.0, 100.77, 101.71, 98.39, 100.62, 99.32, 96.8, 96.38, 97.61, 95.62, 96.86, 97.48, 92.66, 93.01, 91.93, 92.22], "المنطقة الشرقية": [89.34, 92.74, 98.43, 98.85, 98.87, 104.9, 102.67, 96.48, 101.09, 100.16, 100.4, 98.37, 96.79, 94.18, 92.05, 93.89, 91.45, 98.17, 97.62, 97.63, 97.75, 95.73], "عسير": [88.47, 89.27, 93.79, 94.15, 94.93, 95.51, 96.6, 98.4, 102.27, 100.56, 101.79, 95.52, 91.52, 92.62, 92.37, 88.55, 87.52, 89.04, 86.53, 86.31, 88.51, 87.77], "تبوك": [91.34, 89.6, 91.38, 90.1, 90.11, 90.27, 93.6, 92.16, 95.63, 99.74, 103.71, 101.09, 99.32, 99.72, 100.14, 102.22, 100.48, 104.4, 103.53, 103.37, 101.96, 102.63], "حائل": [91.63, 91.39, 95.54, 97.27, 96.27, 99.18, 98.85, 101.78, 101.84, 99.64, 96.35, 102.27, 99.55, 99.79, 101.12, 103.01, 103.65, 102.65, 93.69, 93.8, 95.39, 92.3], "الحدود الشمالية": [91.89, 90.41, 91.33, 92.42, 98.22, 96.94, 103.55, 101.67, 99.04, 98.44, 100.06, 102.51, 98.48, 100.61, 101.73, 101.26, 107.05, 99.29, 93.94, 94.41, 99.98, 103.86], "جازان": [95.42, 98.03, 94.51, 95.67, 93.61, 96.83, 97.39, 97.67, 99.76, 97.73, 101.6, 100.95, 103.74, 102.07, 100.24, 99.31, 101.71, 99.18, 100.71, 100.38, 100.26, 98.79], "نجران": [86.49, 86.58, 89.2, 88.1, 85.64, 87.16, 88.92, 90.99, 98.29, 105.13, 98.47, 98.28, 96.69, 100.2, 97.78, 102.78, 102.06, 100.61, 101.39, 100.55, 105.61, 100.11], "الباحة": [114.65, 123.54, 111.57, 114.85, 104.55, 97.69, 93.36, 102.12, 101.77, 105.86, 93.07, 99.73, 82.11, 81.51, 79.73, 83.09, 83.86, 80.16, 78.62, 78.93, 76.14, 77.91], "الجوف": [90.56, 94.63, 98.28, 97.88, 91.82, 95.11, 98.09, 95.36, 100.62, 104.8, 97.26, 97.5, 89.64, 97.62, 98.05, 93.48, 96.98, 96.93, 93.63, 93.83, 95.62, 107.02]}, "region_names": ["عام (المملكة)", "الرياض", "مكة المكرمة", "المدينة المنورة", "القصيم", "المنطقة الشرقية", "عسير", "تبوك", "حائل", "الحدود الشمالية", "جازان", "نجران", "الباحة", "الجوف"], "type_series": {"قطعة أرض سكنية": [80.6, 83.61, 87.86, 91.02, 92.58, 96.42, 99.88, 98.6, 100.19, 100.28, 99.79, 99.74, 100.21, 101.13, 101.38, 102.25, 105.56, 101.3, 100.44, 99.76, 101.46, 107.65], "فيلا": [77.25, 75.42, 81.17, 84.14, 85.62, 92.1, 92.63, 94.16, 99.27, 101.79, 100.67, 98.31, 93.61, 101.82, 102.22, 104.66, 103.21, 105.03, 102.4, 103.25, 96.88, 94.89], "شقة": [82.74, 82.92, 84.76, 88.61, 91.45, 95.73, 98.76, 99.59, 101.1, 101.31, 99.05, 98.57, 100.34, 101.07, 100.93, 101.4, 101.58, 100.32, 99.25, 98.9, 100.49, 101.43]}, "type_growth": [{"type": "قطعة أرض سكنية", "growth": 33.56, "volatility": 2.42, "latest_yoy": 6.3}, {"type": "فيلا", "growth": 22.83, "volatility": 4.01, "latest_yoy": -9.7}, {"type": "شقة", "growth": 22.59, "volatility": 1.81, "latest_yoy": 1.1}], "seasonality": {"إجمالي السكني": [1.28, 1.72, 1.2, 0.7], "عام": [1.0, 1.8, 1.3, 0.98]}, "forecast": {"future_labels": ["2026Q3", "2026Q4", "2027Q1", "2027Q2"], "linear": [109.94, 110.98, 112.01, 113.05], "holt": [107.15, 107.96, 108.77, 109.58]}, "snapshot": [{"category_ar": "الرقم القياسي العام", "category_en": "General index", "weight_pct": 100.0, "index_q2_2025": 105.0, "index_q1_2026": 103.29, "index_q2_2026": 106.34, "yoy_change_pct": 1.3, "qoq_change_pct": 3.0}, {"category_ar": "سكني", "category_en": "Residential", "weight_pct": 72.661, "index_q2_2025": 101.57, "index_q1_2026": 100.55, "index_q2_2026": 104.25, "yoy_change_pct": 2.6, "qoq_change_pct": 3.7}, {"category_ar": "قطعة أرض سكنية", "category_en": "Residential Plot", "weight_pct": 45.849, "index_q2_2025": 101.3, "index_q1_2026": 101.46, "index_q2_2026": 107.65, "yoy_change_pct": 6.3, "qoq_change_pct": 6.1}, {"category_ar": "فيلا", "category_en": "Villa", "weight_pct": 10.455, "index_q2_2025": 105.03, "index_q1_2026": 96.88, "index_q2_2026": 94.89, "yoy_change_pct": -9.7, "qoq_change_pct": -2.1}, {"category_ar": "شقة", "category_en": "Apartment", "weight_pct": 14.989, "index_q2_2025": 100.32, "index_q1_2026": 100.49, "index_q2_2026": 101.43, "yoy_change_pct": 1.1, "qoq_change_pct": 0.9}, {"category_ar": "دور", "category_en": "Floor", "weight_pct": 1.368, "index_q2_2025": 98.05, "index_q1_2026": 99.49, "index_q2_2026": 98.42, "yoy_change_pct": 0.4, "qoq_change_pct": -1.1}, {"category_ar": "تجاري", "category_en": "Commercial", "weight_pct": 25.404, "index_q2_2025": 115.69, "index_q1_2026": 110.81, "index_q2_2026": 111.96, "yoy_change_pct": -3.2, "qoq_change_pct": 1.0}, {"category_ar": "قطعة أرض تجارية", "category_en": "Commercial Plot", "weight_pct": 22.836, "index_q2_2025": 116.56, "index_q1_2026": 111.23, "index_q2_2026": 112.44, "yoy_change_pct": -3.5, "qoq_change_pct": 1.1}, {"category_ar": "عمارة", "category_en": "Building", "weight_pct": 2.015, "index_q2_2025": 110.22, "index_q1_2026": 109.82, "index_q2_2026": 109.52, "yoy_change_pct": -0.6, "qoq_change_pct": -0.3}, {"category_ar": "معرض / محل", "category_en": "Gallery/ Shop", "weight_pct": 0.553, "index_q2_2025": 101.37, "index_q1_2026": 98.04, "index_q2_2026": 101.74, "yoy_change_pct": 0.4, "qoq_change_pct": 3.8}, {"category_ar": "زراعي", "category_en": "Agricultural", "weight_pct": 1.935, "index_q2_2025": 102.63, "index_q1_2026": 112.79, "index_q2_2026": 114.23, "yoy_change_pct": 11.3, "qoq_change_pct": 1.3}], "meta": {"source": "الهيئة العامة للإحصاء (GASTAT) - الرقم القياسي لأسعار العقارات REPI", "base_year": "2023 = 100", "coverage": "2021Q1 - 2026Q2", "file": "REPI_Q2_2026_AR_EN.xlsx"}}
+</script>
+
+<script>
+const DATA = JSON.parse(document.getElementById('dashboard-data').textContent);
+
+const FONT = "Tajawal, sans-serif";
+const COLORS = { navy:'#132038', teal:'#2f5d5d', sand:'#b8935f', pos:'#3f7a55', neg:'#a8483d', muted:'#6b6558', grid:'#e2dccc' };
+
+const baseLayout = {
+  font: { family: FONT, color: '#1c1c1c', size: 13 },
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor: 'rgba(0,0,0,0)',
+  margin: { t: 20, r: 20, b: 50, l: 50 },
+  xaxis: { gridcolor: COLORS.grid, tickfont:{size:11} },
+  yaxis: { gridcolor: COLORS.grid, tickfont:{size:11} },
+  legend: { orientation:'h', y:1.12, x:1, xanchor:'right' },
+  hoverlabel: { font:{family:FONT} }
+};
+const config = { displayModeBar:false, responsive:true };
+
+// ---------- KPI cards ----------
+const gen = DATA.snapshot.find(s => s.category_ar === 'الرقم القياسي العام');
+const res = DATA.snapshot.find(s => s.category_ar === 'سكني');
+const topRegion = DATA.region_ranking[0];
+const kpis = [
+  { label:'المؤشر العام (Q2-2026)', value: gen.index_q2_2026.toFixed(2), delta:`ربعي ${gen.qoq_change_pct>0?'+':''}${gen.qoq_change_pct}% · سنوي ${gen.yoy_change_pct>0?'+':''}${gen.yoy_change_pct}%`, cls: gen.yoy_change_pct>=0?'pos':'neg' },
+  { label:'المؤشر السكني (Q2-2026)', value: res.index_q2_2026.toFixed(2), delta:`ربعي ${res.qoq_change_pct>0?'+':''}${res.qoq_change_pct}% · سنوي ${res.yoy_change_pct>0?'+':''}${res.yoy_change_pct}%`, cls: res.yoy_change_pct>=0?'pos':'neg' },
+  { label:'الأعلى نمواً إقليمياً', value: topRegion.region, delta:`+${topRegion.growth}% تراكمي منذ 2021Q1`, cls:'pos' },
+  { label:'تغطية البيانات', value: DATA.meta.coverage, delta:`قاعدة: ${DATA.meta.base_year}`, cls:'' },
+];
+document.getElementById('kpiRow').innerHTML = kpis.map(k => `
+  <div class="kpi">
+    <div class="label">${k.label}</div>
+    <div class="value ${k.cls}">${k.value}</div>
+    <div class="delta">${k.delta}</div>
+  </div>`).join('');
+
+// ---------- 1. Overview ----------
+Plotly.newPlot('chartOverview', [
+  { x: DATA.quarters, y: DATA.general, name:'المؤشر العام', mode:'lines+markers', line:{color:COLORS.navy,width:2.5}, marker:{size:4} },
+  { x: DATA.quarters, y: DATA.residential, name:'السكني', mode:'lines+markers', line:{color:COLORS.sand,width:2.5}, marker:{size:4} },
+  { x: DATA.quarters, y: DATA.commercial, name:'التجاري', mode:'lines+markers', line:{color:COLORS.teal,width:2.5,dash:'dot'}, marker:{size:4} },
+], { ...baseLayout, yaxis:{...baseLayout.yaxis, title:'الرقم القياسي'} }, config);
+
+// ---------- 2. Region ranking ----------
+const rr = DATA.region_ranking.slice().sort((a,b)=>a.growth-b.growth);
+Plotly.newPlot('chartRegionRank', [{
+  x: rr.map(d=>d.growth), y: rr.map(d=>d.region), type:'bar', orientation:'h',
+  marker:{ color: rr.map(d=> d.growth<0 ? COLORS.neg : COLORS.pos) },
+  text: rr.map(d=> (d.growth>0?'+':'')+d.growth+'%'), textposition:'outside',
+  textfont:{size:11}
+}], { ...baseLayout, margin:{t:10,r:60,b:40,l:110}, xaxis:{...baseLayout.xaxis, title:'نمو تراكمي %', zeroline:true, zerolinecolor:'#999'} }, config);
+
+// ---------- Region trend explorer ----------
+let selectedRegions = ['عام (المملكة)', DATA.region_ranking[0].region];
+const chipsEl = document.getElementById('regionChips');
+function renderChips(){
+  chipsEl.innerHTML = DATA.region_names.map(r =>
+    `<button class="chip ${selectedRegions.includes(r)?'active':''}" data-r="${r}">${r}</button>`
+  ).join('');
+  chipsEl.querySelectorAll('.chip').forEach(btn=>{
+    btn.onclick = () => {
+      const r = btn.dataset.r;
+      if(selectedRegions.includes(r)){
+        if(selectedRegions.length>1) selectedRegions = selectedRegions.filter(x=>x!==r);
+      } else {
+        if(selectedRegions.length>=4) selectedRegions.shift();
+        selectedRegions.push(r);
+      }
+      renderChips(); renderRegionTrend();
+    };
+  });
+}
+const palette = [COLORS.navy, COLORS.sand, COLORS.teal, COLORS.neg];
+function renderRegionTrend(){
+  const traces = selectedRegions.map((r,i)=>({
+    x: DATA.quarters, y: DATA.region_series[r], name:r, mode:'lines+markers',
+    line:{color:palette[i%palette.length], width:2.5}, marker:{size:4}
+  }));
+  Plotly.newPlot('chartRegionTrend', traces, { ...baseLayout, margin:{t:10,r:20,b:70,l:45} }, config);
+}
+renderChips(); renderRegionTrend();
+
+// ---------- 3. Property type ----------
+const typeColors = { 'قطعة أرض سكنية': COLORS.navy, 'فيلا': COLORS.teal, 'شقة': COLORS.sand };
+Plotly.newPlot('chartTypeSeries', Object.keys(DATA.type_series).map(t => ({
+  x: DATA.quarters, y: DATA.type_series[t], name:t, mode:'lines+markers',
+  line:{color:typeColors[t], width:2.5}, marker:{size:4}
+})), baseLayout, config);
+
+const tt = document.getElementById('typeTable');
+tt.innerHTML = `<thead><tr><th>النوع</th><th>نمو تراكمي</th><th>سنوي (YoY)</th><th>تقلب (QoQ std)</th></tr></thead><tbody>` +
+  DATA.type_growth.map(t => `<tr>
+    <td>${t.type}</td>
+    <td class="num ${t.growth>=0?'pos':'neg'}">${t.growth>0?'+':''}${t.growth}%</td>
+    <td class="num ${t.latest_yoy>=0?'pos':'neg'}">${t.latest_yoy>0?'+':''}${t.latest_yoy}%</td>
+    <td class="num">${t.volatility}</td>
+  </tr>`).join('') + `</tbody>`;
+
+// ---------- 4. Seasonality ----------
+const qlabels = ['الربع الأول','الربع الثاني','الربع الثالث','الربع الرابع'];
+Plotly.newPlot('chartSeasonal', [
+  { x: qlabels, y: DATA.seasonality['عام'], name:'عام', type:'bar', marker:{color:COLORS.navy} },
+  { x: qlabels, y: DATA.seasonality['إجمالي السكني'], name:'إجمالي السكني', type:'bar', marker:{color:COLORS.sand} },
+], { ...baseLayout, barmode:'group', yaxis:{...baseLayout.yaxis, title:'متوسط QoQ %', zeroline:true, zerolinecolor:'#999'} }, config);
+
+// ---------- 5. Forecast ----------
+const allQ = DATA.quarters.concat(DATA.forecast.future_labels);
+const genFull = DATA.general.concat(Array(4).fill(null));
+const linFull = Array(DATA.quarters.length-1).fill(null).concat([DATA.general[DATA.general.length-1]]).concat(DATA.forecast.linear);
+const holtFull = Array(DATA.quarters.length-1).fill(null).concat([DATA.general[DATA.general.length-1]]).concat(DATA.forecast.holt);
+Plotly.newPlot('chartForecast', [
+  { x: allQ, y: genFull, name:'البيانات الفعلية', mode:'lines+markers', line:{color:COLORS.navy,width:2.5}, marker:{size:4} },
+  { x: allQ, y: linFull, name:'توقع: اتجاه خطي', mode:'lines+markers', line:{color:COLORS.sand,width:2.5,dash:'dash'}, marker:{size:5,symbol:'triangle-up'} },
+  { x: allQ, y: holtFull, name:'توقع: تمهيد أسي (Holt)', mode:'lines+markers', line:{color:COLORS.pos,width:2.5,dash:'dash'}, marker:{size:5,symbol:'square'} },
+], { ...baseLayout, margin:{t:10,r:20,b:70,l:45} }, config);
+
+// ---------- 6. Supplementary market context (externally cited) ----------
+const contextCards = [
+  { v:'98–99%', l:'إشغال مكاتب Grade A في الرياض', src:'CBRE، الربع الأول 2026' },
+  { v:'~6%', l:'معدل شواغر التجزئة (Retail)', src:'CBRE، الربع الثاني 2026' },
+  { v:'6.8–6.9%', l:'متوسط العائد الإيجاري للشقق في الرياض', src:'Global Property Guide, Q1-2026' },
+  { v:'+19.6%', l:'نمو إيجارات الشقق سنوياً في الرياض', src:'JLL، مطلع 2026' },
+  { v:'+17.2%', l:'نمو إيجارات الفلل سنوياً في الرياض', src:'JLL، مطلع 2026' },
+  { v:'800K+', l:'عجز سكني تراكمي متوقع بحلول 2030', src:'تقارير قطاع الإسكان' },
+];
+document.getElementById('contextGrid').innerHTML = contextCards.map(c => `
+  <div class="ctx-card">
+    <div class="v">${c.v}</div>
+    <div class="l">${c.l}</div>
+    <div class="src">${c.src}</div>
+  </div>`).join('');
+
+// ---------- 7. Strategic recommendation ----------
+const recoStats = [
+  { v:'+55.9%', l:'نمو تراكمي في الرياض (2021Q1–2026Q2)', cls:'pos' },
+  { v:'+33.6%', l:'نمو الأراضي السكنية، الأقل تقلباً بين الأنواع', cls:'pos' },
+  { v:'-32.1%', l:'انخفاض تراكمي في الباحة — يستدعي تحققاً إضافياً', cls:'neg' },
+];
+document.getElementById('recoStats').innerHTML = recoStats.map(s => `
+  <div class="reco-stat">
+    <div class="v" style="color:${s.cls==='pos'?'#8fd9a8':'#f0a89f'}">${s.v}</div>
+    <div class="l">${s.l}</div>
+  </div>`).join('');
+</script>
+
+</body>
+</html>
