@@ -1,8 +1,8 @@
 مؤشر أسعار العقارات السعودي — تحليل بيانات القطاع العقاري
 Saudi Real Estate Price Index (REPI) — Data Analysis Project
 > Portfolio project analyzing Saudi Arabia's official Real Estate Price Index (GASTAT), covering regional performance, property-type trends, seasonality, a baseline forecasting model, and an executive-ready strategic presentation. Built with Python (pandas, statsmodels, Plotly) and pptxgenjs.
-▶ عرض اللوحة التفاعلية / View Live Dashboard
-📊 العرض التنفيذي / Executive Presentation
+▶ [عرض اللوحة التفاعلية / View Live Dashboard](https://waheedsaif78.github.io/saudi-real-estate-price-index-analysis/repi_dashboard.html)
+📊 [العرض التنفيذي / Executive Presentation](repi_executive_deck.pdf)
 ---
 نظرة عامة على المشروع
 تحليل تطبيقي شامل لمؤشر الرقم القياسي لأسعار العقارات (REPI) الصادر عن الهيئة العامة للإحصاء في المملكة العربية السعودية، بهدف استخراج رؤى قابلة للاستخدام في دعم قرارات الاستثمار والتطوير العقاري: أي المناطق تشهد أعلى نمو، كيف تتباين أنواع العقار (أراضٍ سكنية / فلل / شقق) في الأداء والمخاطر، وهل توجد أنماط موسمية يمكن البناء عليها — وصولاً إلى توصية استراتيجية واضحة لتخصيص رأس المال، معروضة بصيغة تنفيذية (PowerPoint) ولوحة تفاعلية (Dashboard).
@@ -28,7 +28,7 @@ Saudi Real Estate Price Index (REPI) — Data Analysis Project
 الباحة الاستثناء الأبرز: انخفاض تراكمي حاد بنسبة -32.1%، وهو الأسوأ أداءً بين كل المناطق ويستدعي تحققاً إضافياً من الأسباب المحلية.
 الأراضي السكنية الأعلى نمواً والأقل تقلباً نسبياً بين فئات الأصول الفرعية (+33.6% نمو تراكمي، σ=2.42)، بينما سجّلت الفلل أعلى تقلب (σ=4.01) وأحدث تراجع سنوي حاد (-9.7%).
 نمط موسمي أولي: الربع الثاني يسجل تاريخياً أعلى متوسط نمو ربعي لكل من المؤشر العام (+1.8%) والسكني (+1.72%)، بينما الربع الرابع الأضعف.
-التوصية الاستراتيجية: تركيز التخصيص الرأسمالي على الرياض وفئة الأراضي السكنية، مع تجميد أي تخصيص جديد لمنطقة الباحة لحين تحقق ميداني (التفاصيل الكاملة في العرض التنفيذي).
+التوصية الاستراتيجية: تركيز التخصيص الرأسمالي على الرياض وفئة الأراضي السكنية، مع إخضاع أي تخصيص في منطقة الباحة لتحقق ميداني مسبق (التفاصيل الكاملة في العرض التنفيذي).
 المنهجية والأدوات
 الاستخراج والتنظيف: `pandas`, `openpyxl` — تحويل الجداول الرسمية متعددة المستويات إلى بنية Tidy طويلة (long format)، مع تحقق من اكتمال السلاسل الزمنية وغياب القيم الناقصة/المكررة.
 التحليل الاستكشافي: إحصاء وصفي، ترتيب مقارن، تحليل تقلب (rolling std)، تحليل موسمية.
@@ -37,26 +37,25 @@ Saudi Real Estate Price Index (REPI) — Data Analysis Project
 العرض التنفيذي: PowerPoint (`pptxgenjs`) — 16 شريحة بتصميم RTL احترافي، تشمل شريحة قرار واحد، رسوم بيانية أصلية، إطار عمل IRR/NPV (توضيحي)، مصفوفة مخاطر/فرص، وخارطة طريق تنفيذية.
 هيكل المشروع
 ```
-repo/
-├── data/
-│   ├── raw/                          # الملف الرسمي الأصلي من GASTAT
-│   └── processed/                    # البيانات بعد التنظيف (CSV)
-├── notebooks/
-│   └── repi_full_analysis.ipynb      # استخراج، تنظيف، EDA، وتنبؤ (جزء واحد كامل)
-├── dashboard/
-│   └── index.html                    # اللوحة التفاعلية (Plotly, RTL)
-├── reports/
-│   └── repi_executive_deck.pptx      # العرض التنفيذي (16 شريحة، RTL)
-├── requirements.txt
-└── README.md
+├── 01_data_import_cleaning.ipynb    # استخراج البيانات الرسمية وتنظيفها
+├── 02_eda_and_forecast.ipynb        # التحليل الاستكشافي والتنبؤ الأولي
+├── REPI_Q2_2026_AR_EN__1_.xlsx      # الملف الرسمي من الهيئة العامة للإحصاء
+├── repi_by_region_clean.csv         # المؤشر حسب المنطقة بعد التنظيف
+├── repi_by_type_clean.csv           # المؤشر حسب نوع العقار بعد التنظيف
+├── repi_latest_snapshot.csv         # آخر قراءة لكل سلسلة
+├── repi_dashboard.html              # اللوحة التفاعلية (Plotly, RTL)
+├── repi_executive_deck.pptx / .pdf  # العرض التنفيذي
+├── preview_general_vs_residential.png
+└── requirements.txt
 ```
 طريقة التشغيل
 ```bash
 pip install -r requirements.txt
-jupyter notebook notebooks/repi_full_analysis.ipynb
+jupyter notebook 01_data_import_cleaning.ipynb
+jupyter notebook 02_eda_and_forecast.ipynb
 ```
-لعرض اللوحة التفاعلية: افتح `dashboard/index.html` مباشرة في المتصفح، أو انشرها عبر GitHub Pages.
-لعرض الشرائح: افتح `reports/repi_executive_deck.pptx` في PowerPoint.
+لعرض اللوحة التفاعلية: افتح `repi_dashboard.html` في المتصفح، أو عبر [الرابط المنشور على GitHub Pages](https://waheedsaif78.github.io/saudi-real-estate-price-index-analysis/repi_dashboard.html).
+لعرض الشرائح: افتح `repi_executive_deck.pptx` في PowerPoint أو `repi_executive_deck.pdf` في المتصفح.
 قيود التحليل
 حجم العينة الزمنية (22 ربعاً) محدود لتحليل موسمية إحصائي رسمي أو نمذجة ARIMA/SARIMA كاملة.
 نموذج التنبؤ المرفق نموذج أساسي (Baseline) لأغراض منهجية تعليمية، وليس أداة اتخاذ قرار استثماري.
